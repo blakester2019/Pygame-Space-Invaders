@@ -1,55 +1,72 @@
-import pygame as pygame
-import sys
+import pygame, sys
 
-# CLASSES
 class Rick(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.rick_image = pygame.image.load("pickle_rick.png")
-        self.rick_rect = self.rick_image.get_rect(center = (10, HEIGHT / 2))
+        self.originalImage = pygame.image.load("pickle_rick.png")
+        self.image = pygame.transform.scale(self.originalImage, (50, 70))
+        self.rect = self.image.get_rect(center = (50, HEIGHT/2))
+        self.pressed_keys = {"up": False, "down": False}
 
     def update(self):
-        self.rick_rect.center = pygame.mouse.get_pos()
+        if self.pressed_keys["up"]:
+            self.rect.y -= 5
+        if self.pressed_keys["down"]:
+            self.rect.y +=5
 
-    def shootLaser(self):
-        return Laser(pygame.mouse.get_pos()[0], pygame.mouse.get_pos()[1],)
+    def shoot_laser(self):
+        return Laser(60, self.rect.y - 20)
 
 class Laser(pygame.sprite.Sprite):
-    def __init__(self, x, y):
+    def __init__(self, Xi, Yi):
         super().__init__()
-        self.laser_image = pygame.Surface((50, 20))
-        self.laser_image.fill(255,0,0)
-        self.laser_rect = self.laser_image.get_rect(center = (x, y))
+        self.image = pygame.Surface((40, 10))
+        self.image.fill((255,0,0))
+        self.rect = self.image.get_rect(center = (Xi, Yi))
 
     def update(self):
-        self.rect.x += 5
+        self.rect.x += 10
+    
+        if self.rect.x >= WIDTH + 100:
+            self.kill()
 
+# GAME VARIABLES
 
-
-# GAME OPTIONS
 pygame.init()
-SIZE = WIDTH, HEIGHT = 800, 600
 clock = pygame.time.Clock()
-screen = pygame.display.set_mode(SIZE)
+WIDTH, HEIGHT = 800, 800
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.mouse.set_visible(False)
 
-# GROUPS
-Rick = Rick()
-Rick_Group = pygame.sprite.Group()
-Rick_Group.add(Rick)
+rick = Rick()
+rick_group = pygame.sprite.Group()
+rick_group.add(rick)
 
-Laser_Group = pygame.sprite.Group()
+laser_group = pygame.sprite.Group()
 
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            Laser_Group.add(Rick.shootLaser())
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_w:
+                rick.pressed_keys["up"] = True
+            if event.key == pygame.K_s:
+                rick.pressed_keys["down"] = True
+            if event.key == pygame.K_SPACE:
+                laser_group.add(rick.shoot_laser())
+        elif event.type == pygame.KEYUP:
+            if event.key == pygame.K_w:
+                rick.pressed_keys["up"] = False
+            if event.key == pygame.K_s:
+                rick.pressed_keys["down"] = False
 
-    # fill screen
-    screen.fill((0, 0, 0))
-    Rick_Group.draw(screen)
-    Rick_Group.update()
+    # Draw Objects
+    screen.fill((30, 30, 30))
+    laser_group.draw(screen)
+    rick_group.draw(screen)
+    rick_group.update()
+    laser_group.update()
     pygame.display.flip()
     clock.tick(30)
